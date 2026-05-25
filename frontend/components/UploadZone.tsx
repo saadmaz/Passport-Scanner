@@ -3,10 +3,9 @@
 import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Upload, Camera, AlertCircle, Loader2 } from "lucide-react";
-import { cn, formatBytes, checkImageResolution } from "@/lib/utils";
+import { cn, formatBytes } from "@/lib/utils";
 import { scanPassport } from "@/lib/api";
 import { useScanStore } from "@/store/scanStore";
-import { DataHandlingNotice } from "./DataHandlingNotice";
 
 const ACCEPTED_TYPES = {
   "image/jpeg": [".jpg", ".jpeg"],
@@ -63,15 +62,6 @@ export function UploadZone() {
         return;
       }
 
-      // Resolution check
-      const res = await checkImageResolution(file);
-      if (!res.ok) {
-        setClientError(
-          `Image resolution ${res.width}×${res.height}px is too low. Minimum long edge: 1400px.`
-        );
-        return;
-      }
-
       // Preview
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
@@ -114,8 +104,6 @@ export function UploadZone() {
 
   return (
     <div className="space-y-4">
-      <DataHandlingNotice />
-
       <div
         {...getRootProps()}
         className={cn(
@@ -138,7 +126,7 @@ export function UploadZone() {
           {isLoading
             ? status === "uploading"
               ? "Uploading…"
-              : "Processing with AI…"
+              : "Processing…"
             : isDragActive
             ? "Drop the passport image here"
             : "Drag & drop your passport image, or click to browse"}

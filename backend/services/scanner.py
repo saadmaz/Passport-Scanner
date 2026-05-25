@@ -1,4 +1,4 @@
-"""Orchestrator: preprocessing → Claude Vision → Tesseract fallback → validation."""
+"""Orchestrator: preprocessing → Tesseract OCR → validation."""
 
 from __future__ import annotations
 
@@ -9,11 +9,8 @@ import numpy as np
 
 from backend.models.passport import CheckDigitResult, PassportData, ScanResponse
 from backend.services.check_digit import validate_td3
-from backend.services.claude_ocr import OCRServiceUnavailable, extract_via_claude
 from backend.services.preprocessing import preprocess
 from backend.services.tesseract_ocr import extract_via_tesseract
-
-CONFIDENCE_FALLBACK_THRESHOLD = "medium"
 
 
 def _validate_check_digits(data: Optional[PassportData]) -> CheckDigitResult:
@@ -34,32 +31,26 @@ def scan_image(image_bytes: bytes, content_type: str) -> ScanResponse:
     t0 = time.perf_counter()
     warnings: list[str] = []
 
-    jpeg_bytes, mrz_region = preprocess(image_bytes, content_type)
+    jpeg_bytes, mrz_candidates = preprocess(image_bytes, content_type)
 
     data: Optional[PassportData] = None
     confidence = "low"
     extraction_method: str = "none"
 
-    # Try Claude Vision first
-    try:
-        data, confidence = extract_via_claude(jpeg_bytes)
-        extraction_method = "claude_vision"
-    except OCRServiceUnavailable as exc:
-        warnings.append(f"Claude Vision unavailable: {exc}; falling back to Tesseract")
-
-    # Fall back to Tesseract if Claude failed or confidence is low
-    if data is None or confidence == "low":
+    # Try each MRZ candidate region; stop at first high/medium confidence result
+    for mrz_region in mrz_candidates:
         tess_data, tess_confidence = extract_via_tesseract(mrz_region)
-        if tess_data is not None:
+        if tess_data is None:
+            continue
+        if data is None or tess_confidence == "medium":
             data = tess_data
             confidence = tess_confidence
             extraction_method = "tesseract_mrz"
-            if extraction_method != "tesseract_mrz":
-                warnings.append("Fell back to Tesseract OCR")
+        if confidence == "medium":
+            break
 
     check_digits = _validate_check_digits(data)
 
-    # Warn on any failed check digit
     failed = [k for k, v in check_digits.model_dump().items() if not v]
     if failed and data is not None:
         warnings.append(f"Check digit mismatch for: {', '.join(failed)}")
