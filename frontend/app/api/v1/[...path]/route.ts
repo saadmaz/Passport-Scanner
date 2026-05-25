@@ -30,16 +30,12 @@ async function proxy(req: Request, segments: string[]): Promise<Response> {
   });
 }
 
-export async function GET(
-  req: Request,
-  { params }: { params: { path: string[] } }
-) {
-  return proxy(req, params.path);
+type Ctx = { params: Promise<{ path: string[] }> };
+
+export async function GET(req: Request, ctx: Ctx) {
+  return proxy(req, (await ctx.params).path);
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: { path: string[] } }
-) {
-  return proxy(req, params.path);
+export async function POST(req: Request, ctx: Ctx) {
+  return proxy(req, (await ctx.params).path);
 }
