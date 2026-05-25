@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Data Automation Dashboard</title>
+    <style>
+        :root {
+            --primary-deep-blue: #0f172a;
+            --brand-blue: #2563eb;
+            --brand-hover-blue: #1d4ed8;
+            --background-tint: #f8fafc;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --success-green: #10b981;
+            --error-red: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-tint);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .dashboard-card {
+            background: #ffffff;
+            max-width: 650px;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+
+        .header-banner {
+            background: var(--primary-deep-blue);
+            color: #ffffff;
+            padding: 24px 32px;
+            position: relative;
+        }
+
+        .header-banner h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .header-banner p {
+            margin: 6px 0 0 0;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .content-area {
+            padding: 32px;
+        }
+
+        .dropzone-container {
+            border: 2px dashed #cbd5e1;
+            background: #fdfdfd;
+            border-radius: 12px;
+            padding: 32px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            margin-bottom: 28px;
+        }
+
+        .dropzone-container:hover {
+            border-color: var(--brand-blue);
+            background: #f0f7ff;
+        }
+
+        .dropzone-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+
+        .dropzone-text {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--brand-blue);
+            margin: 0;
+        }
+
+        .dropzone-subtext {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 4px 0 0 0;
+        }
+
+        .status-container {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .status-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #166534;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-container {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .grid-half {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-wrapper label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper input {
+            padding: 11px 14px;
+            font-size: 15px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: var(--text-dark);
+            transition: all 0.15s ease;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .input-wrapper input::placeholder {
+            color: #cbd5e1;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="dashboard-card">
+        <div class="header-banner">
+            <h1>Passport Automation Scanner</h1>
+            <p>Instant MRZ parsing engine for structured document workflows</p>
+        </div>
+
+        <div class="content-area">
+            <!-- Interactive File Dropzone -->
+            <div class="dropzone-container" onclick="document.getElementById('hiddenFileInput').click()">
+                <span class="dropzone-icon">📥</span>
+                <p class="dropzone-text">Upload or Snap Passport Image</p>
+                <p class="dropzone-subtext">Supports high-res PNG, JPG, or JPEG images</p>
+                <input type="file" id="hiddenFileInput" accept="image/*" style="display: none;"
+                    onchange="executeScanWorkflow()">
+            </div>
+
+            <!-- Dynamic Feedback Blocks -->
+            <div id="statusBox" class="status-container">
+                <span class="status-spinner"></span>
+                <span>Analyzing core pixel maps and verifying MRZ strings...</span>
+            </div>
+
+            <div id="errorBox" class="error-container"></div>
+
+            <!-- Main Form Data Output -->
+            <form class="form-grid" onsubmit="event.preventDefault();">
+                <div class="grid-half">
+                    <div class="input-wrapper">
+                        <label>Passport Number</label>
+                        <input type="text" id="out_passport_num" placeholder="Pending scan extraction..." readonly>
+                    </div>
+                    <div class="input-wrapper">
+                        <label>Nationality Code</label>
+                        <input type="text" id="out_nationality" placeholder="Pending scan extraction..." readonly>
+                    </div>
+                </div>
+
+                <div class="input-wrapper">
+                    <label>Surname</label>
+                    <input type="text" id="out_surname" placeholder="Pending scan extraction..." readonly>
+                </div>
+
+                <div class="input-wrapper">
+                    <label>Given Names</label>
+                    <input type="text" id="out_given_names" placeholder="Pending scan extraction..." readonly>
+                </div>
+
+                <div class="grid-half">
+                    <div class="input-wrapper">
+                        <label>Date of Birth</label>
+                        <input type="text" id="out_dob" placeholder="YYYY-MM-DD" readonly>
+                    </div>
+                    <div class="input-wrapper">
+                        <label>Gender</label>
+                        <input type="text" id="out_gender" placeholder="Pending..." readonly>
+                    </div>
+                </div>
+
+                <div class="input-wrapper">
+                    <label>Date of Expiry</label>
+                    <input type="text" id="out_expiry" placeholder="YYYY-MM-DD" readonly>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        async function executeScanWorkflow() {
+            const inputControl = document.getElementById('hiddenFileInput');
+            const statusBox = document.getElementById('statusBox');
+            const errorBox = document.getElementById('errorBox');
+
+            if (inputControl.files.length === 0) return;
+
+            const fileObject = inputControl.files[0];
+            const payload = new FormData();
+            payload.append('passport_image', fileObject);
+
+            // Reset View State to Processing
+            statusBox.style.display = 'flex';
+            errorBox.style.display = 'none';
+
+            try {
+                const networkResponse = await fetch('/api/scan', {
+                    method: 'POST',
+                    body: payload
+                });
+
+                if (!networkResponse.ok) {
+                    throw new Error(`Server returned error status code: ${networkResponse.status}`);
+                }
+
+                const backendData = await networkResponse.json();
+                statusBox.style.display = 'none';
+
+                if (backendData.success) {
+                    // Map structured server values straight to read-only UI controls
+                    document.getElementById('out_passport_num').value = backendData.passport_number || '';
+                    document.getElementById('out_nationality').value = backendData.nationality || '';
+                    document.getElementById('out_surname').value = backendData.surname || '';
+                    document.getElementById('out_given_names').value = backendData.given_names || '';
+                    document.getElementById('out_dob').value = backendData.dob || '';
+                    document.getElementById('out_gender').value = backendData.gender || '';
+                    document.getElementById('out_expiry').value = backendData.expiry_date || '';
+                } else {
+                    errorBox.innerText = backendData.error || "An unexpected processing fault occurred.";
+                    errorBox.style.display = 'block';
+                }
+            } catch (networkError) {
+                statusBox.style.display = 'none';
+                errorBox.innerText = "Failed to connect to local OCR scanning engine. Ensure 'app.py' is running in the terminal.";
+                errorBox.style.display = 'block';
+            } finally {
+                // Clear value pointer so same image can be re-uploaded if necessary
+                inputControl.value = "";
+            }
+        }
+    </script>
+
+</body>
+
+</html>
