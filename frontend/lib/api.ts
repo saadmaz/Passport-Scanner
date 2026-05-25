@@ -2,7 +2,7 @@ import axios from "axios";
 import axiosRetry from "axios-retry";
 import type { ScanResponse } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
