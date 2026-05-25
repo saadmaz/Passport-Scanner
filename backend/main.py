@@ -8,16 +8,13 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
+from backend.limiter import limiter
 from backend.routers.scan import router as scan_router
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
-log = logging.getLogger(__name__)
-
-limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="Passport Automation Scanner",
@@ -29,7 +26,6 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS
 allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
 allowed_origins = [o.strip() for o in allowed_origins_raw.split(",")]
 app.add_middleware(
@@ -41,7 +37,6 @@ app.add_middleware(
 )
 
 
-# API key auth middleware (optional — disabled when API_KEY env var is empty)
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     required_key = os.getenv("API_KEY", "")

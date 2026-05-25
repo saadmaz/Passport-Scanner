@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Install Tesseract OCR + English data
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -11,14 +10,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Non-root user
 RUN useradd -m -u 1001 appuser
 WORKDIR /app
 
+# Copy requirements first for layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy backend source into /app/backend/ so "from backend.xxx" imports work
+COPY . ./backend/
 
 RUN chown -R appuser:appuser /app
 USER appuser
