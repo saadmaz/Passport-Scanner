@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import io
+import os
 import shutil
-import subprocess
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
-from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from backend.models.passport import (
     HealthResponse,
@@ -22,13 +23,17 @@ from backend.services.preprocessing import (
 )
 from backend.services.scanner import scan_image
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/v1")
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 
+_rate_limit = os.getenv("RATE_LIMIT_PER_HOUR", "100")
+
 
 @router.post("/scan", response_model=ScanResponse)
+@limiter.limit(f"{_rate_limit}/hour")
 async def scan_passport(request: Request, passport_image: UploadFile = File(...)):
     content_type = (passport_image.content_type or "").lower()
     if content_type not in ALLOWED_CONTENT_TYPES:
@@ -69,17 +74,7 @@ async def scan_passport(request: Request, passport_image: UploadFile = File(...)
 
 @router.get("/health", response_model=HealthResponse)
 async def health():
-    import os
-    import anthropic
-
-    anthropic_ok = False
-    try:
-        client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
-        # Lightweight ping — just instantiate and check key presence
-        anthropic_ok = bool(os.getenv("ANTHROPIC_API_KEY"))
-    except Exception:
-        pass
-
+    anthropic_ok = bool(os.getenv("ANTHROPIC_API_KEY"))
     tesseract_ok = shutil.which("tesseract") is not None
 
     overall = "ok" if (anthropic_ok and tesseract_ok) else "degraded"

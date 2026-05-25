@@ -52,12 +52,6 @@ async def api_key_middleware(request: Request, call_next):
     return await call_next(request)
 
 
-# Rate limiting per scan endpoint
-@scan_router.post("/scan")
-async def _scan_rate_limited(request: Request):
-    pass  # decoration only; actual handler is in routers/scan.py
-
-
 app.include_router(scan_router)
 
 
