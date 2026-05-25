@@ -10,11 +10,10 @@ export const apiClient = axios.create({
 });
 
 axiosRetry(apiClient, {
-  retries: 3,
+  retries: 2,
   retryDelay: axiosRetry.exponentialDelay,
   retryCondition: (error) =>
-    axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-    (error.response?.status !== undefined && error.response.status >= 500),
+    error.response?.status !== undefined && error.response.status >= 500,
 });
 
 export async function scanPassport(
