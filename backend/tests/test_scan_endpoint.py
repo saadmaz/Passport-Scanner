@@ -1,9 +1,9 @@
-"""Integration tests for POST /api/v1/scan using httpx + stub for Anthropic."""
+"""Integration tests for POST /api/v1/scan."""
 
 from __future__ import annotations
 
 import io
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -40,7 +40,7 @@ MOCK_PASSPORT = PassportData(
 
 MOCK_RESPONSE = ScanResponse(
     success=True,
-    extraction_method="claude_vision",
+    extraction_method="tesseract_mrz",
     confidence="high",
     check_digits_valid=CheckDigitResult(
         passport_number=True, date_of_birth=True, date_of_expiry=True, composite=True
@@ -71,9 +71,9 @@ class TestScanEndpoint:
         )
         assert resp.status_code == 413
 
-    def test_valid_scan_with_stubbed_claude(self):
+    def test_valid_scan_with_stubbed_tesseract(self):
         jpeg = _make_jpeg()
-        with patch("backend.services.scanner.extract_via_claude", return_value=(MOCK_PASSPORT, "high")):
+        with patch("backend.services.scanner.extract_via_tesseract", return_value=(MOCK_PASSPORT, "high")):
             resp = client.post(
                 "/api/v1/scan",
                 files={"passport_image": ("passport.jpg", jpeg, "image/jpeg")},
@@ -81,23 +81,12 @@ class TestScanEndpoint:
         assert resp.status_code == 200
         body = resp.json()
         assert body["success"] is True
-        assert body["extraction_method"] == "claude_vision"
+        assert body["extraction_method"] == "tesseract_mrz"
         assert body["data"]["surname"] == "ERIKSSON"
 
-    def test_claude_failure_falls_back(self):
-        from backend.services.claude_ocr import OCRServiceUnavailable
-
+    def test_no_mrz_found_returns_success_false(self):
         jpeg = _make_jpeg()
-        with (
-            patch(
-                "backend.services.scanner.extract_via_claude",
-                side_effect=OCRServiceUnavailable("test"),
-            ),
-            patch(
-                "backend.services.scanner.extract_via_tesseract",
-                return_value=(None, "low"),
-            ),
-        ):
+        with patch("backend.services.scanner.extract_via_tesseract", return_value=(None, "low")):
             resp = client.post(
                 "/api/v1/scan",
                 files={"passport_image": ("passport.jpg", jpeg, "image/jpeg")},
@@ -105,7 +94,7 @@ class TestScanEndpoint:
         assert resp.status_code == 200
         body = resp.json()
         assert body["success"] is False
-        assert "Claude Vision unavailable" in str(body["warnings"])
+        assert body["extraction_method"] == "none"
 
 
 class TestHealthEndpoint:
@@ -114,7 +103,6 @@ class TestHealthEndpoint:
         assert resp.status_code == 200
         body = resp.json()
         assert "status" in body
-        assert "anthropic_reachable" in body
         assert "tesseract_available" in body
 
 

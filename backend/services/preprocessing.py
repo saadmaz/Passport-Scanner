@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import math
 from typing import List, Tuple
 
 import cv2
@@ -91,12 +90,6 @@ def _enhance_variants(gray: np.ndarray) -> List[np.ndarray]:
         enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 10
     )
     results.append(adaptive)
-
-    # Variant 3: heavy denoise + CLAHE + Otsu (good for noisy/blurry images)
-    denoised = cv2.fastNlMeansDenoising(gray, h=10, templateWindowSize=7, searchWindowSize=21)
-    denoised_clahe = clahe.apply(denoised)
-    _, otsu2 = cv2.threshold(denoised_clahe, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    results.append(otsu2)
 
     return results
 

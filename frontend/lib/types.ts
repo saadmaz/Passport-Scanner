@@ -1,5 +1,5 @@
 export type Confidence = "high" | "medium" | "low";
-export type ExtractionMethod = "claude_vision" | "tesseract_mrz" | "none";
+export type ExtractionMethod = "tesseract_mrz" | "none";
 export type MrzFormat = "TD1" | "TD2" | "TD3";
 export type Sex = "M" | "F" | "X";
 

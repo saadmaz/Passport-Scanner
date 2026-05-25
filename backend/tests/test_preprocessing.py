@@ -10,9 +10,7 @@ from PIL import Image
 
 from backend.services.preprocessing import (
     MAX_FILE_BYTES,
-    MIN_LONG_EDGE,
     ImageTooLargeError,
-    ImageTooSmallError,
     UnsupportedFormatError,
     preprocess,
 )
@@ -33,17 +31,24 @@ def _make_png(width: int, height: int) -> bytes:
 
 
 class TestPreprocess:
-    def test_valid_jpeg_returns_bytes_and_array(self):
+    def test_valid_jpeg_returns_bytes_and_candidates(self):
         data = _make_jpeg(1600, 1200)
-        jpeg_out, mrz = preprocess(data, "image/jpeg")
+        jpeg_out, mrz_candidates = preprocess(data, "image/jpeg")
         assert isinstance(jpeg_out, bytes)
         assert len(jpeg_out) > 0
-        assert isinstance(mrz, np.ndarray)
-        assert mrz.ndim == 2  # grayscale
+        assert isinstance(mrz_candidates, list)
+        assert len(mrz_candidates) > 0
+        assert all(isinstance(c, np.ndarray) for c in mrz_candidates)
 
     def test_valid_png_accepted(self):
         data = _make_png(1600, 1200)
-        jpeg_out, mrz = preprocess(data, "image/png")
+        jpeg_out, mrz_candidates = preprocess(data, "image/png")
+        assert isinstance(jpeg_out, bytes)
+        assert len(mrz_candidates) > 0
+
+    def test_small_image_accepted(self):
+        data = _make_jpeg(600, 400)
+        jpeg_out, mrz_candidates = preprocess(data, "image/jpeg")
         assert isinstance(jpeg_out, bytes)
 
     def test_file_too_large_raises(self):
@@ -51,22 +56,16 @@ class TestPreprocess:
         with pytest.raises(ImageTooLargeError):
             preprocess(oversized, "image/jpeg")
 
-    def test_image_too_small_raises(self):
-        data = _make_jpeg(600, 400)
-        with pytest.raises(ImageTooSmallError):
-            preprocess(data, "image/jpeg")
-
     def test_unsupported_format_raises(self):
         data = _make_jpeg(1600, 1200)
         with pytest.raises(UnsupportedFormatError):
             preprocess(data, "image/gif")
 
-    def test_mrz_region_height(self):
+    def test_mrz_candidates_are_grayscale(self):
         data = _make_jpeg(1600, 1200)
-        _, mrz = preprocess(data, "image/jpeg")
-        # MRZ region should be roughly 22% of image height
-        expected_h = int(1200 * 0.22)
-        assert abs(mrz.shape[0] - expected_h) <= 2
+        _, mrz_candidates = preprocess(data, "image/jpeg")
+        for candidate in mrz_candidates:
+            assert candidate.ndim == 2
 
     def test_invalid_image_bytes_raises(self):
         with pytest.raises(UnsupportedFormatError):
