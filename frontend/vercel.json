@@ -3,7 +3,8 @@
   "outputDirectory": ".next",
   "build": {
     "env": {
-      "NEXT_PUBLIC_API_URL": "https://passport-scanner-production.up.railway.app"
+      "BACKEND_URL": "https://passport-scanner-production.up.railway.app",
+      "NEXT_PUBLIC_API_URL": ""
     }
   }
 }
