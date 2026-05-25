@@ -17,7 +17,6 @@ from backend.models.passport import (
 from backend.services.check_digit import validate_td3
 from backend.services.preprocessing import (
     ImageTooLargeError,
-    ImageTooSmallError,
     UnsupportedFormatError,
 )
 from backend.services.scanner import scan_image
@@ -63,20 +62,14 @@ async def scan_passport(request: Request, passport_image: UploadFile = File(...)
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=str(exc))
     except ImageTooLargeError as exc:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(exc))
-    except ImageTooSmallError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
-
     return result
 
 
 @router.get("/health", response_model=HealthResponse)
 async def health():
-    anthropic_ok = bool(os.getenv("ANTHROPIC_API_KEY"))
     tesseract_ok = shutil.which("tesseract") is not None
-    overall = "ok" if (anthropic_ok and tesseract_ok) else "degraded"
     return HealthResponse(
-        status=overall,
-        anthropic_reachable=anthropic_ok,
+        status="ok" if tesseract_ok else "degraded",
         tesseract_available=tesseract_ok,
     )
 

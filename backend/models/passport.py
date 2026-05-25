@@ -36,7 +36,7 @@ class PassportData(BaseModel):
 
 class ScanResponse(BaseModel):
     success: bool
-    extraction_method: Literal["claude_vision", "tesseract_mrz", "none"]
+    extraction_method: Literal["tesseract_mrz", "none"]
     confidence: Literal["high", "medium", "low"]
     check_digits_valid: CheckDigitResult
     warnings: list[str] = Field(default_factory=list)
@@ -46,7 +46,6 @@ class ScanResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: Literal["ok", "degraded"]
-    anthropic_reachable: bool
     tesseract_available: bool
 
 
