@@ -11,8 +11,8 @@ from PIL import Image, ExifTags, UnidentifiedImageError
 
 MAX_FILE_BYTES = 10 * 1024 * 1024   # 10 MB
 MAX_PIXELS = 50_000_000              # 50 MP hard guard
-TARGET_LONG_EDGE = 1600              # upscale target for Tesseract accuracy
-MRZ_CROP_FRACTIONS = [0.22, 0.28, 0.35, 0.42]  # multiple crops to try
+TARGET_LONG_EDGE = 1600              # normalize resolution for Tesseract
+MRZ_CROP_FRACTIONS = [0.25, 0.35]   # two crops is enough
 
 
 class ImageTooLargeError(ValueError):
@@ -41,14 +41,16 @@ def _fix_exif_orientation(img: Image.Image) -> Image.Image:
     return img
 
 
-def _upscale_if_small(gray: np.ndarray) -> np.ndarray:
+def _normalize_resolution(gray: np.ndarray) -> np.ndarray:
+    """Scale image so long edge is exactly TARGET_LONG_EDGE (up or down)."""
     h, w = gray.shape[:2]
     long_edge = max(h, w)
-    if long_edge >= TARGET_LONG_EDGE:
+    if long_edge == TARGET_LONG_EDGE:
         return gray
     scale = TARGET_LONG_EDGE / long_edge
     new_w, new_h = int(w * scale), int(h * scale)
-    return cv2.resize(gray, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+    interp = cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA
+    return cv2.resize(gray, (new_w, new_h), interpolation=interp)
 
 
 def _deskew(gray: np.ndarray) -> np.ndarray:
@@ -150,8 +152,8 @@ def preprocess(image_bytes: bytes, content_type: str) -> Tuple[bytes, List[np.nd
     arr = np.array(pil_img)
     gray = cv2.cvtColor(arr, cv2.COLOR_RGB2GRAY)
 
-    # Upscale small images so Tesseract has enough resolution
-    gray = _upscale_if_small(gray)
+    # Normalize to TARGET_LONG_EDGE so memory usage is bounded
+    gray = _normalize_resolution(gray)
     gray = _deskew(gray)
 
     # Build all candidate MRZ regions across all enhancement variants
