@@ -26,14 +26,9 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-allowed_origins_raw = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:3000,https://passport-scanner-xi.vercel.app",
-)
-allowed_origins = [o.strip() for o in allowed_origins_raw.split(",")]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
