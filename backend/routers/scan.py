@@ -7,9 +7,8 @@ import os
 import shutil
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile, status
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 
+from backend.limiter import limiter
 from backend.models.passport import (
     HealthResponse,
     ScanResponse,
@@ -23,11 +22,10 @@ from backend.services.preprocessing import (
 )
 from backend.services.scanner import scan_image
 
-limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/v1")
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png"}
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 _rate_limit = os.getenv("RATE_LIMIT_PER_HOUR", "100")
 
@@ -42,7 +40,6 @@ async def scan_passport(request: Request, passport_image: UploadFile = File(...)
             detail=f"Unsupported file type '{content_type}'. Upload JPEG or PNG.",
         )
 
-    # Stream into memory via SpooledTemporaryFile — never touch disk
     buf = io.BytesIO()
     chunk_size = 65_536
     total = 0
@@ -76,7 +73,6 @@ async def scan_passport(request: Request, passport_image: UploadFile = File(...)
 async def health():
     anthropic_ok = bool(os.getenv("ANTHROPIC_API_KEY"))
     tesseract_ok = shutil.which("tesseract") is not None
-
     overall = "ok" if (anthropic_ok and tesseract_ok) else "degraded"
     return HealthResponse(
         status=overall,
@@ -93,8 +89,4 @@ async def schema():
 @router.post("/validate")
 async def validate_mrz(req: ValidateMRZRequest):
     results = validate_td3(req.mrz_line_1, req.mrz_line_2)
-    all_valid = all(results.values())
-    return {
-        "valid": all_valid,
-        "check_digits": results,
-    }
+    return {"valid": all(results.values()), "check_digits": results}
