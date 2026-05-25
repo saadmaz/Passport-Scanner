@@ -1,9 +1,11 @@
 {
   "framework": "nextjs",
   "outputDirectory": ".next",
+  "env": {
+    "BACKEND_URL": "https://passport-scanner-production.up.railway.app"
+  },
   "build": {
     "env": {
-      "BACKEND_URL": "https://passport-scanner-production.up.railway.app",
       "NEXT_PUBLIC_API_URL": ""
     }
   }
