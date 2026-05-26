@@ -2,7 +2,10 @@ import axios from "axios";
 import axiosRetry from "axios-retry";
 import type { ScanResponse } from "./types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Empty string = relative URL → requests go through the Next.js proxy route
+// (frontend/app/api/v1/[...path]/route.ts), never directly to the backend.
+// The proxy reads BACKEND_URL server-side, so CORS is never an issue.
+const BASE_URL = "";
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -28,7 +31,6 @@ export async function scanPassport(
   form.append("passport_image", file);
 
   const { data } = await apiClient.post<ScanResponse>("/api/v1/scan", form, {
-    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (evt) => {
       if (onUploadProgress && evt.total) {
         onUploadProgress(Math.round((evt.loaded / evt.total) * 100));

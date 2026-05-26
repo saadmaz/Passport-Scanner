@@ -83,6 +83,9 @@ export function UploadZone() {
             : detail ?? (err instanceof Error ? err.message : "Unknown error");
         setError(msg);
       } finally {
+        // Clear preview before revoking so React doesn't try to render
+        // a revoked blob URL in the error-state re-render.
+        setPreview(null);
         URL.revokeObjectURL(objectUrl);
       }
     },
