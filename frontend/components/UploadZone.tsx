@@ -75,9 +75,12 @@ export function UploadZone() {
         });
         setScanResult(result);
       } catch (err: unknown) {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
         const msg =
-          (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-          (err instanceof Error ? err.message : "Unknown error");
+          status === 502 || status === 503 || status === 504
+            ? "The scanning service is currently unavailable. Please try again in a moment."
+            : detail ?? (err instanceof Error ? err.message : "Unknown error");
         setError(msg);
       } finally {
         URL.revokeObjectURL(objectUrl);

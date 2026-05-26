@@ -281,7 +281,7 @@
             errorBox.style.display = 'none';
 
             try {
-                const networkResponse = await fetch('/api/scan', {
+                const networkResponse = await fetch('/api/v1/scan', {
                     method: 'POST',
                     body: payload
                 });
@@ -293,22 +293,25 @@
                 const backendData = await networkResponse.json();
                 statusBox.style.display = 'none';
 
-                if (backendData.success) {
-                    // Map structured server values straight to read-only UI controls
-                    document.getElementById('out_passport_num').value = backendData.passport_number || '';
-                    document.getElementById('out_nationality').value = backendData.nationality || '';
-                    document.getElementById('out_surname').value = backendData.surname || '';
-                    document.getElementById('out_given_names').value = backendData.given_names || '';
-                    document.getElementById('out_dob').value = backendData.dob || '';
-                    document.getElementById('out_gender').value = backendData.gender || '';
-                    document.getElementById('out_expiry').value = backendData.expiry_date || '';
+                if (backendData.success && backendData.data) {
+                    const d = backendData.data;
+                    document.getElementById('out_passport_num').value = d.passport_number || '';
+                    document.getElementById('out_nationality').value = d.nationality || '';
+                    document.getElementById('out_surname').value = d.surname || '';
+                    document.getElementById('out_given_names').value = d.given_names || '';
+                    document.getElementById('out_dob').value = d.date_of_birth || '';
+                    document.getElementById('out_gender').value = d.sex || '';
+                    document.getElementById('out_expiry').value = d.date_of_expiry || '';
                 } else {
-                    errorBox.innerText = backendData.error || "An unexpected processing fault occurred.";
+                    const warn = backendData.warnings?.join(' ') || '';
+                    errorBox.innerText = warn || "Could not extract passport data from the image.";
                     errorBox.style.display = 'block';
                 }
             } catch (networkError) {
                 statusBox.style.display = 'none';
-                errorBox.innerText = "Failed to connect to local OCR scanning engine. Ensure 'app.py' is running in the terminal.";
+                errorBox.innerText = networkError.message?.includes('502') || networkError.message?.includes('503')
+                    ? "The scanning service is currently unavailable. Please try again in a moment."
+                    : "Failed to connect to the OCR scanning engine. Ensure the backend server is running.";
                 errorBox.style.display = 'block';
             } finally {
                 // Clear value pointer so same image can be re-uploaded if necessary

@@ -12,8 +12,12 @@ export const apiClient = axios.create({
 axiosRetry(apiClient, {
   retries: 2,
   retryDelay: axiosRetry.exponentialDelay,
-  retryCondition: (error) =>
-    error.response?.status !== undefined && error.response.status >= 500,
+  retryCondition: (error) => {
+    const status = error.response?.status;
+    // Don't retry 502/503/504 — gateway is down, retrying immediately won't help
+    if (status === 502 || status === 503 || status === 504) return false;
+    return status !== undefined && status >= 500;
+  },
 });
 
 export async function scanPassport(
